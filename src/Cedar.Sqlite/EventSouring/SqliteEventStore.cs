@@ -25,7 +25,7 @@
 
         }
 
-        public Task AppendToStream(string streamId, int expectedVersion, IEnumerable<NewSteamEvent> events)
+        public Task AppendToStream(string streamId, int expectedVersion, IEnumerable<NewStreamEvent> events)
         {
             var connection = _getConnection();
             connection.BeginTransaction();
@@ -139,11 +139,10 @@
                 streamId: streamId,
                 status: PageReadStatus.Success,
                 fromSequenceNumber: start,
-                lastSequenceNumber: results[results.Length - 1].SequenceNumber,
                 nextSequenceNumber: results[results.Length - 1].SequenceNumber + 1,
-                direction: ReadDirection.Forward,
-                isEndOfStream: true, //TODO
-                events: results);
+                lastSequenceNumber: results[results.Length - 1].SequenceNumber,
+                direction: ReadDirection.Forward, //TODO
+                isEndOfStream: true, events: results);
 
             return Task.FromResult(streamEventsPage);
         }
@@ -174,11 +173,10 @@
                 streamId: streamId,
                 status: PageReadStatus.Success,
                 fromSequenceNumber: start,
-                lastSequenceNumber: results[0].SequenceNumber,
                 nextSequenceNumber: results[0].SequenceNumber - 1,
-                direction: ReadDirection.Backward,
-                isEndOfStream: true, //TODO
-                events: results);
+                lastSequenceNumber: results[0].SequenceNumber,
+                direction: ReadDirection.Backward, //TODO
+                isEndOfStream: true, events: results);
 
             return Task.FromResult(streamEventsPage);
         }

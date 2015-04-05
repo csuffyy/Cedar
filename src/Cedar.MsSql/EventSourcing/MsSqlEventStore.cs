@@ -5,7 +5,7 @@
 
     public class MsSqlEventStore: IEventStore
     {
-        public Task AppendToStream(string streamId, int expectedVersion, IEnumerable<NewSteamEvent> events)
+        public Task AppendToStream(string streamId, int expectedVersion, IEnumerable<NewStreamEvent> events)
         {
             throw new System.NotImplementedException();
         }

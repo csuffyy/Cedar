@@ -1,92 +1,102 @@
 ﻿namespace Cedar.EventSourcing
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
     using FluentAssertions;
     using Xunit;
 
-    public abstract class EventStoreAcceptanceTests
+    public abstract partial class EventStoreAcceptanceTests
     {
         protected abstract EventStoreAcceptanceTestFixture GetFixture();
 
-        [Fact]
-        public async Task Can_read_stream_forward()
+        private static NewStreamEvent[] EventId(params int[] eventNumbers)
+        {
+            return eventNumbers
+                .Select(eventNumber =>
+                {
+                    var eventId = Guid.Parse("00000000-0000-0000-0000-" + eventNumber.ToString().PadLeft(12, '0'));
+                    return new NewStreamEvent(eventId, new byte[] { 1, 2 }, new byte[] { 3, 4 });
+                })
+                .ToArray();
+        }
+
+        private static StreamEvent ExpectedStreamEvent(string streamId, int eventNumber, int sequenceNumber)
+        {
+            var eventId = Guid.Parse("00000000-0000-0000-0000-" + eventNumber.ToString().PadLeft(12, '0'));
+            return new StreamEvent(streamId, eventId, sequenceNumber, null, new byte[] { 1, 2 }, new byte[] { 3, 4 });
+        }
+
+        private static async Task InitializeEventStore(IEventStore eventStore)
+        {
+            await eventStore.AppendToStream("stream-1", ExpectedVersion.NoStream, EventId(1, 2, 3));
+            await eventStore.AppendToStream("stream-2", ExpectedVersion.NoStream, EventId(4, 5, 6));
+        }
+
+        public static IEnumerable<object[]> GetReadStreamTheories()
+        {
+            var stuff = new[]
+            {
+                new ReadStreamTheory("stream-1", StreamPosition.Start, ReadDirection.Forward, 2, 
+                    new StreamEventsPage("stream-1", PageReadStatus.Success, 0, 2, 2, ReadDirection.Forward, false,
+                          ExpectedStreamEvent("stream-1", 1, 0), ExpectedStreamEvent("stream-1", 2, 1)))
+            };
+
+            return stuff.Select(t => new object[] { t });
+        }
+
+        [Theory]
+        [MemberData("GetTheories")]
+        public async Task Can_read_streams(ReadStreamTheory theory)
         {
             using(var fixture = GetFixture())
             {
                 using(var eventStore = await fixture.GetEventStore())
                 {
-                    const string streamId = "stream";
-                    var events = new[]
-                    {
-                        new NewSteamEvent(Guid.NewGuid(),
-                            new byte[] { 1, 2 },
-                            new byte[] { 3, 4 }),
-                        new NewSteamEvent(Guid.NewGuid(), new byte[0])
-                    };
+                    await InitializeEventStore(eventStore);
 
-                    await eventStore.AppendToStream(streamId, ExpectedVersion.NoStream, events);
+                    var streamEventsPage = await eventStore.ReadStream(theory.StreamId, theory.Start, 2, theory.Direction);
 
-                    var streamEventsPage = await eventStore.ReadStream(streamId, StreamPosition.Start, 10);
+                    var expectedStreamEventsPage = theory.ExpectedStreamEventsPage;
+                    var expectedEvents = theory.ExpectedStreamEventsPage.Events;
 
-                    streamEventsPage.FromSequenceNumber.Should().Be(0);
-                    streamEventsPage.IsEndOfStream.Should().BeTrue();
-                    streamEventsPage.LastSequenceNumber.Should().Be(1);
-                    streamEventsPage.NextSequenceNumber.Should().Be(2);
-                    streamEventsPage.ReadDirection.Should().Be(ReadDirection.Forward);
-                    streamEventsPage.Status.Should().Be(PageReadStatus.Success);
-                    streamEventsPage.StreamId.Should().Be(streamId);
-                    streamEventsPage.Events.Count.Should().Be(2);
+                    streamEventsPage.FromSequenceNumber.Should().Be(expectedStreamEventsPage.FromSequenceNumber);
+                    streamEventsPage.IsEndOfStream.Should().Be(expectedStreamEventsPage.IsEndOfStream);
+                    streamEventsPage.LastSequenceNumber.Should().Be(expectedStreamEventsPage.LastSequenceNumber);
+                    streamEventsPage.NextSequenceNumber.Should().Be(expectedStreamEventsPage.NextSequenceNumber);
+                    streamEventsPage.ReadDirection.Should().Be(expectedStreamEventsPage.ReadDirection);
+                    streamEventsPage.Status.Should().Be(expectedStreamEventsPage.Status);
+                    streamEventsPage.StreamId.Should().Be(expectedStreamEventsPage.StreamId);
+                    streamEventsPage.Events.Count.Should().Be(expectedStreamEventsPage.Events.Count);
 
-                    var first = streamEventsPage.Events.First();
-                    first.Body.ShouldAllBeEquivalentTo(new byte[] { 1, 2 });
-                    first.EventId.Should().Be(events[0].EventId);
-                    first.Metadata.Count.Should().Be(2);
-                    first.Metadata.ShouldAllBeEquivalentTo(new byte[] { 3, 4 });
-                    first.SequenceNumber.Should().Be(0);
-                    first.StreamId.Should().Be(streamId);
+                    streamEventsPage.Events.ShouldAllBeEquivalentTo(
+                        expectedEvents,
+                        options => options.Excluding(@event => @event.Checkpoint));
                 }
             }
         }
 
-        [Fact]
-        public async Task Can_read_stream_backward()
+        public class ReadStreamTheory
         {
-            using(var fixture = GetFixture())
+            public readonly string StreamId;
+            public readonly int Start;
+            public readonly ReadDirection Direction;
+            public readonly int PageSize;
+            public readonly StreamEventsPage ExpectedStreamEventsPage;
+
+            public ReadStreamTheory(
+                string streamId,
+                int start,
+                ReadDirection direction,
+                int pageSize,
+                StreamEventsPage expectedStreamEventsPage)
             {
-                using(var eventStore = await fixture.GetEventStore())
-                {
-                    const string streamId = "stream";
-                    var events = new[]
-                    {
-                        new NewSteamEvent(Guid.NewGuid(),
-                            new byte[0],
-                            new byte[0]),
-                        new NewSteamEvent(Guid.NewGuid(), new byte[0])
-                    };
-
-                    await eventStore.AppendToStream(streamId, ExpectedVersion.NoStream, events);
-
-                    var streamEventsPage =
-                        await eventStore.ReadStream(streamId, StreamPosition.End, 10, ReadDirection.Backward);
-
-                    streamEventsPage.FromSequenceNumber.Should().Be(-1);
-                    streamEventsPage.IsEndOfStream.Should().BeTrue();
-                    streamEventsPage.LastSequenceNumber.Should().Be(1);
-                    streamEventsPage.NextSequenceNumber.Should().Be(-1);
-                    streamEventsPage.ReadDirection.Should().Be(ReadDirection.Backward);
-                    streamEventsPage.Status.Should().Be(PageReadStatus.Success);
-                    streamEventsPage.StreamId.Should().Be(streamId);
-                    streamEventsPage.Events.Count.Should().Be(2);
-
-                    var first = streamEventsPage.Events.First();
-                    first.Body.Should().NotBeNull();
-                    first.EventId.Should().Be(events[1].EventId);
-                    first.SequenceNumber.Should().Be(1);
-                    first.StreamId.Should().Be(streamId);
-                    first.Metadata.Should().BeEmpty();
-                }
+                StreamId = streamId;
+                Start = start;
+                Direction = direction;
+                PageSize = pageSize;
+                ExpectedStreamEventsPage = expectedStreamEventsPage;
             }
         }
 
@@ -100,10 +110,10 @@
                     const string streamId = "stream";
                     var events = new[]
                     {
-                        new NewSteamEvent(Guid.NewGuid(),
+                        new NewStreamEvent(Guid.NewGuid(),
                             new byte[0],
                             new byte[0]),
-                        new NewSteamEvent(Guid.NewGuid(), new byte[0])
+                        new NewStreamEvent(Guid.NewGuid(), new byte[0])
                     };
 
                     await eventStore.AppendToStream(streamId, ExpectedVersion.NoStream, events);

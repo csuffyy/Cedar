@@ -2,13 +2,13 @@
 {
     using System;
 
-    public sealed class NewSteamEvent
+    public sealed class NewStreamEvent
     {
         public readonly Guid EventId;
         public readonly byte[] Body;
         public readonly byte[] Metadata;
 
-        public NewSteamEvent(Guid eventId, byte[] body, byte[] metadata = null)
+        public NewStreamEvent(Guid eventId, byte[] body, byte[] metadata = null)
         {
             EventId = eventId;
             Body = body ?? new byte[0];

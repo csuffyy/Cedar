@@ -5,7 +5,7 @@
 
     public static class EventStoreExtensions
     {
-        public static Task AppendToStream(this IEventStore eventStore, string streamId, int expectedVersion, NewSteamEvent @event)
+        public static Task AppendToStream(this IEventStore eventStore, string streamId, int expectedVersion, NewStreamEvent @event)
         {
             Ensure.That(eventStore, "eventStore").IsNotNull();
             Ensure.That(streamId, "streamId").IsNotNullOrWhiteSpace();
@@ -15,7 +15,7 @@
             return eventStore.AppendToStream(streamId, expectedVersion, new[] { @event });
         }
 
-        public static Task AppendToStream(this IEventStore eventStore, string streamId, int expectedVersion, params NewSteamEvent[] events)
+        public static Task AppendToStream(this IEventStore eventStore, string streamId, int expectedVersion, params NewStreamEvent[] events)
         {
             Ensure.That(eventStore, "eventStore").IsNotNull();
             Ensure.That(streamId, "streamId").IsNotNullOrWhiteSpace();

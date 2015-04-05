@@ -4,24 +4,24 @@
 
     public class StreamEventsPage
     {
-        public readonly string StreamId;
-        public readonly PageReadStatus Status;
+        public readonly IReadOnlyCollection<StreamEvent> Events;
         public readonly int FromSequenceNumber;
+        public readonly bool IsEndOfStream;
         public readonly int LastSequenceNumber;
         public readonly int NextSequenceNumber;
         public readonly ReadDirection ReadDirection;
-        public readonly bool IsEndOfStream;
-        public readonly IReadOnlyCollection<StreamEvent> Events;
+        public readonly PageReadStatus Status;
+        public readonly string StreamId;
 
         public StreamEventsPage(
             string streamId,
             PageReadStatus status,
             int fromSequenceNumber,
-            int lastSequenceNumber,
             int nextSequenceNumber,
+            int lastSequenceNumber,
             ReadDirection direction,
             bool isEndOfStream,
-            IReadOnlyCollection<StreamEvent> events)
+            params StreamEvent[] events)
         {
             StreamId = streamId;
             Status = status;

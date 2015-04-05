@@ -19,7 +19,7 @@
             _connection = createConnection();
         }
 
-        public Task AppendToStream(string streamId, int expectedVersion, IEnumerable<NewSteamEvent> events)
+        public Task AppendToStream(string streamId, int expectedVersion, IEnumerable<NewStreamEvent> events)
         {
             var eventDatas = events.Select(e => new EventData(e.EventId, "type", false, e.Body.ToArray(), e.Metadata.ToArray()));
 
@@ -71,11 +71,10 @@
                 streamId,
                 (PageReadStatus) Enum.Parse(typeof(PageReadStatus), streamEventsSlice.Status.ToString()),
                 streamEventsSlice.FromEventNumber,
-                streamEventsSlice.LastEventNumber,
                 streamEventsSlice.NextEventNumber,
+                streamEventsSlice.LastEventNumber,
                 (ReadDirection) Enum.Parse(typeof(ReadDirection), streamEventsSlice.ReadDirection.ToString()),
-                streamEventsSlice.IsEndOfStream,
-                streamEventsSlice
+                streamEventsSlice.IsEndOfStream, streamEventsSlice
                     .Events
                     .Select(e => new StreamEvent(
                         streamId,

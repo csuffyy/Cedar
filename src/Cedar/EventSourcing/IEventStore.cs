@@ -8,7 +8,7 @@
     {
         // TODO support buckets or not??
 
-        Task AppendToStream(string streamId, int expectedVersion, IEnumerable<NewSteamEvent> events);
+        Task AppendToStream(string streamId, int expectedVersion, IEnumerable<NewStreamEvent> events);
 
         Task DeleteStream(string streamId, int expectedVersion = ExpectedVersion.Any, bool hardDelete = true);
 

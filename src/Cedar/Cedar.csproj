@@ -81,7 +81,7 @@
     <Compile Include="EventSourcing\IEventStore.cs" />
     <Compile Include="EventSourcing\StreamEvent.cs" />
     <Compile Include="EventSourcing\StreamEventsPage.cs" />
-    <Compile Include="EventSourcing\NewSteamEvent.cs" />
+    <Compile Include="EventSourcing\NewStreamEvent.cs" />
     <Compile Include="EventSourcing\PageReadStatus.cs" />
     <Compile Include="EventSourcing\ReadDirection.cs" />
     <Compile Include="EventSourcing\StreamPosition.cs" />
