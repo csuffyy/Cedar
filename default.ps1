@@ -11,7 +11,7 @@ properties {
     $ilmergePath = "$srcDir\packages\ILMerge.2.14.1208\tools\ilmerge.exe"
 }
 
-task default -depends Clean, UpdateVersion, RunTests, CreateNuGetPackages
+task default -depends Clean, UpdateVersion, CreateNuGetPackages, RunTests
 
 task Clean {
     Remove-Item $buildOutputDir -Force -Recurse -ErrorAction SilentlyContinue
@@ -35,10 +35,10 @@ task RunTests -depends Compile {
     EnsureDirectory $reportDir
 
     .$xunitRunner "$srcDir\Cedar.Tests\bin\Release\Cedar.Tests.dll" -html "$reportDir\index.html" -xml "$reportDir\tests.xml"
-	
-	# Pretty-print the xml
-	[Reflection.Assembly]::LoadWithPartialName("System.Xml.Linq")
-	[System.Xml.Linq.XDocument]::Load("$reportDir\tests.xml").Save("$reportDir\tests.xml")
+
+    # Pretty-print the xml
+    [Reflection.Assembly]::LoadWithPartialName("System.Xml.Linq")
+    [System.Xml.Linq.XDocument]::Load("$reportDir\tests.xml").Save("$reportDir\tests.xml")
 }
 
 task ILMerge -depends Compile {
